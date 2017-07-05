@@ -56,9 +56,9 @@ int le_index(int target, std::vector<int>v) {
 	return -1;
 }
 
-std::vector<int>
+std::shared_ptr<std::vector<int>>
 r_solve(int target, std::vector<int> coins,
-	    std::unordered_map<int, std::vector<int>>& memo) {
+	    std::unordered_map<int, std::shared_ptr<std::vector<int>>>& memo) {
 
 	// do we have a solution for target?
 	auto e = memo.find(target);
@@ -71,37 +71,38 @@ r_solve(int target, std::vector<int> coins,
 
 	// is the solution just the coin?
 	if (coins[i] == target) {
-		auto r = memo.emplace(target, std::vector<int>{target});
+		std::shared_ptr<std::vector<int>> n(new std::vector<int> {target});
+		auto r = memo.emplace(target, n);
 		return r.first->second;
 	}
 
 	// walk them in descending order, solving for target - coins[i]
 	int best_count = 0;
 	int best_i = 0;
-	std::vector<int> best;
+	std::shared_ptr<std::vector<int>> best;
 	if (debug) {
 		std::cout << "computing solution to " << target << std::endl;
 	}
 
 	for (; i < coins.size(); i++) {
 		auto sol = r_solve(target - coins[i], coins, memo);
-		if (best_count == 0 || sol.size() < best_count) {
+		if (best_count == 0 || sol->size() < best_count) {
 			best = sol;
-			best_count = sol.size();
+			best_count = sol->size();
 			best_i = i;
 		}
 	}
 	// now make final vector prepending what we built it from
-	std::vector<int> res = {coins[best_i]};
-	res.insert(res.end(), best.begin(), best.end());
+	std::shared_ptr<std::vector<int>> res(new std::vector<int> {coins[best_i]});
+	res->insert(res->end(), best->begin(), best->end());
 	auto r = memo.emplace(target, res);
 	return r.first->second;
 }
 
-std::vector<int>
+std::shared_ptr<std::vector<int>>
 solve(int target, std::vector<int>coins) {
 	// memoize results
-	std::unordered_map<int, std::vector<int>> memo;
+	std::unordered_map<int, std::shared_ptr<std::vector<int>>> memo;
 	return r_solve(target, coins, memo);
 }
 
@@ -144,8 +145,8 @@ int main(int argc, char *argv[]) {
 	auto s = solve(std::atoi(target.c_str()), coins);
 
 	std::cout << "Solved:" << std::endl;
-	for (auto e : s) {
-		std::cout << e << " ";
+	for (auto e = s->begin(); e != s->end(); e++) {
+		std::cout << *e << " ";
 	}
 	std::cout << std::endl;
 }
